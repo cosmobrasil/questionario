@@ -33,3 +33,4 @@ SELECT * FROM vw_dados_dashboard;
 ## ✅ Pronto!
 Após executar o SQL, o aplicativo do questionário estará pronto para salvar dados no Supabase.
 
+

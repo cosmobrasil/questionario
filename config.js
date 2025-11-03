@@ -196,6 +196,36 @@ window.QUESTIONARIO_CONFIG = {
         10: 'ciclo_estendido',
         11: 'ciclo_rastreado',
         12: 'documentacao'
+    },
+
+    // Metodologia de pontuação e grupos (ajustável)
+    METODOLOGIA: {
+        PONTOS: {
+            // Q1 - matéria-prima
+            1: { 1: 0, 2: 2, 3: 3, 4: 2, 5: 1 },
+            // Q2 - resíduos
+            2: { 1: 0, 2: 2, 3: 1 },
+            // Q5 - descarte em aterro (invertido: Sim = 0, Não = 2)
+            5: { 1: 0, 2: 2, 3: 1 },
+            // Q6 - recuperação de energia (Sim = 1, Não = 0, Não sei = 1)
+            6: { 1: 1, 2: 0, 3: 1 },
+            // Padrão para Q3..Q12 (Sim=2, Não=0, Não sei=1)
+            default: { 1: 2, 2: 0, 3: 1 }
+        },
+        GRUPOS: {
+            INPUT: [1],
+            RESIDUOS: [2],
+            OUTPUT: [3, 4, 5, 6],
+            VIDA: [7, 8, 9],
+            MONITORAMENTO: [10, 11, 12]
+        },
+        PESOS: {
+            INPUT: 0.25,
+            RESIDUOS: 0.20,
+            OUTPUT: 0.20,
+            VIDA: 0.20,
+            MONITORAMENTO: 0.15
+        }
     }
 };
 

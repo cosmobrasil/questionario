@@ -17,7 +17,7 @@ CREATE TABLE questionarios (
     empresa_id UUID REFERENCES empresas(id) ON DELETE CASCADE,
     
     -- Entrada (Input)
-    materia_prima INTEGER NOT NULL, -- Q1: 1-6 (valores do questionário)
+    materia_prima INTEGER NOT NULL, -- Q1: 1-5 (valores do questionário)
     
     -- Gestão de Resíduos
     residuos INTEGER NOT NULL, -- Q2: 1-3
@@ -47,7 +47,7 @@ CREATE TABLE questionarios (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     
     -- Constraints
-    CONSTRAINT check_materia_prima CHECK (materia_prima >= 1 AND materia_prima <= 6),
+    CONSTRAINT check_materia_prima CHECK (materia_prima >= 1 AND materia_prima <= 5),
     CONSTRAINT check_residuos CHECK (residuos >= 1 AND residuos <= 3),
     CONSTRAINT check_desmonte CHECK (desmonte >= 1 AND desmonte <= 3),
     CONSTRAINT check_descarte CHECK (descarte >= 1 AND descarte <= 3),
@@ -92,7 +92,7 @@ SELECT
     q.residuos AS RESIDUOS,
     q.desmonte AS DESMONTE,
     q.descarte AS DESCARTE,
-    q.recuperacao AS RECUPERCAO,
+    q.recuperacao AS RECUPERACAO,
     q.reciclagem AS RECICLAGEM,
     q.durabilidade AS DURABILIDADE,
     q.reparavel AS REPARAVEL,
@@ -112,4 +112,17 @@ INNER JOIN empresas e ON q.empresa_id = e.id;
 COMMENT ON TABLE empresas IS 'Armazena dados de identificação das empresas que respondem o questionário';
 COMMENT ON TABLE questionarios IS 'Armazena as respostas do questionário de circularidade';
 COMMENT ON VIEW vw_dados_dashboard IS 'View para exportação dos dados no formato esperado pelo dashboard';
+
+-- Segurança: habilitar RLS e políticas mínimas para coleta
+ALTER TABLE empresas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE questionarios ENABLE ROW LEVEL SECURITY;
+
+-- Permitir apenas INSERT para o papel público (inclui anon/authenticated)
+CREATE POLICY public_insert_empresas ON empresas
+    FOR INSERT TO public
+    WITH CHECK (true);
+
+CREATE POLICY public_insert_questionarios ON questionarios
+    FOR INSERT TO public
+    WITH CHECK (true);
 
