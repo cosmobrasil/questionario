@@ -41,7 +41,7 @@ Abra: **http://localhost:8000**
    - Os dados devem estar salvos no Supabase
 
 ### 3. Verificar no Supabase
-Acesse: https://supabase.com/dashboard/project/glkaisjobfpzopftjkfe
+Acesse: https://supabase.com/dashboard/project/uapwjnnzexamassmwxjc
 - Table Editor → `empresas` → deve ter novo registro
 - Table Editor → `questionarios` → deve ter novas respostas
 

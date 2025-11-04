@@ -132,7 +132,7 @@ CREATE POLICY public_insert_empresas ON empresas
    - `supabase secrets set RESEND_API_KEY=SEU_TOKEN_RESEND`
 
 2. Faça deploy da função serverless:
-   - `supabase functions deploy send-report --project-ref glkaisjobfpzopftjkfe`
+   - `supabase functions deploy send-report --project-ref uapwjnnzexamassmwxjc`
 
 3. (Opcional) Teste manualmente o endpoint após deploy:
    - URL: `${SUPABASE_URL}/functions/v1/send-report`

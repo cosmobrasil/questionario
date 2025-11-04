@@ -1,8 +1,8 @@
 // Configuração do Questionário de Circularidade
 window.QUESTIONARIO_CONFIG = {
     // Configurações do Supabase
-    SUPABASE_URL: 'https://glkaisjobfpzopftjkfe.supabase.co',
-    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdsa2Fpc2pvYmZwem9wZnRqa2ZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1NzYwMzIsImV4cCI6MjA3NzE1MjAzMn0.LTpw3Sb_j2GMK80p5GyU1gskAu6NlsRAJeFhrrwefsw', // Adicione sua anon key aqui
+    SUPABASE_URL: 'https://uapwjnnzexamassmwxjc.supabase.co',
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhcHdqbm56ZXhhbWFzc213eGpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxNjcyODksImV4cCI6MjA3Nzc0MzI4OX0.Yh_SkIe-z2AM672JTyhcoGHL5AIkkGLcGKhAzwF_oN0', // ⚠️ ATENÇÃO: Adicione sua nova anon key aqui (obtenha em: https://supabase.com/dashboard/project/uapwjnnzexamassmwxjc/settings/api)
     
     // Estrutura das 12 questões
     QUESTÕES: [

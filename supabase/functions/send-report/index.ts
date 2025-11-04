@@ -45,9 +45,14 @@ Deno.serve(async (req: Request) => {
       metadata = {},
     } = body || {};
 
+    // Garantir domínio de envio válido (fallback para domínio padrão do Resend)
+    // Usa indexOf para compatibilidade com alvos ES5 (evita String.includes)
+    const isResendDomain = (typeof from === "string") && from.indexOf("@on.resend.dev") !== -1;
+    const fromSanitized = isResendDomain ? from : "CosmoBrasil <noreply@on.resend.dev>";
+
     const recipients = Array.isArray(to) ? to : [to];
     const payload = {
-      from,
+      from: fromSanitized,
       to: recipients,
       subject,
       html: html || "<p>Sem conteúdo.</p>",

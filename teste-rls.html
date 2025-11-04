@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste RLS - Supabase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-3xl mx-auto bg-white rounded-lg shadow-lg p-6">
+        <h1 class="text-2xl font-bold text-gray-900 mb-6">🔍 Teste Completo - RLS e Supabase</h1>
+        
+        <div id="config" class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h2 class="font-semibold mb-2">Configuração Carregada:</h2>
+            <div id="configInfo"></div>
+        </div>
+
+        <div id="testes" class="space-y-4">
+            <button id="btnTestarConexao" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                1️⃣ Testar Conexão
+            </button>
+            <button id="btnTestarInsert" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                2️⃣ Testar INSERT (detecta problema RLS)
+            </button>
+            <button id="btnVerificarPolticas" class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                3️⃣ Verificar Políticas RLS
+            </button>
+        </div>
+
+        <div id="resultado" class="mt-6"></div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        const CONFIG = window.QUESTIONARIO_CONFIG || {};
+        const resultado = document.getElementById('resultado');
+        const configInfo = document.getElementById('configInfo');
+
+        // Mostrar configuração
+        configInfo.innerHTML = `
+            <p><strong>URL:</strong> ${CONFIG.SUPABASE_URL || 'NÃO CONFIGURADO'}</p>
+            <p><strong>Key:</strong> ${CONFIG.SUPABASE_ANON_KEY ? CONFIG.SUPABASE_ANON_KEY.substring(0, 30) + '...' : 'NÃO CONFIGURADO'}</p>
+        `;
+
+        function mostrarResultado(html, tipo = 'info') {
+            const cores = {
+                success: 'bg-green-50 border-green-200 text-green-800',
+                error: 'bg-red-50 border-red-200 text-red-800',
+                warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+                info: 'bg-blue-50 border-blue-200 text-blue-800'
+            };
+            resultado.innerHTML = `<div class="border rounded-lg p-4 ${cores[tipo]}">${html}</div>`;
+        }
+
+        // Teste 1: Conexão
+        document.getElementById('btnTestarConexao').addEventListener('click', async () => {
+            mostrarResultado('Testando conexão...', 'info');
+            
+            try {
+                const { createClient } = supabase;
+                const client = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+                
+                const { count, error } = await client
+                    .from('empresas')
+                    .select('*', { count: 'exact', head: true });
+                
+                if (error) throw error;
+                
+                mostrarResultado(`✅ Conexão OK! Registros na tabela: ${count || 0}`, 'success');
+            } catch (e) {
+                mostrarResultado(`❌ Erro de conexão: ${e.message}`, 'error');
+            }
+        });
+
+        // Teste 2: INSERT (detecta problema RLS)
+        document.getElementById('btnTestarInsert').addEventListener('click', async () => {
+            mostrarResultado('Testando INSERT...', 'info');
+            
+            try {
+                const { createClient } = supabase;
+                const client = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+                
+                const { data, error } = await client
+                    .from('empresas')
+                    .insert([{
+                        nome_empresa: 'TESTE RLS',
+                        cnpj: '99999999999999',
+                        nome_responsavel: 'Teste',
+                        email: 'teste@teste.com',
+                        setor_economico: 'Teste',
+                        produto_avaliado: 'Teste'
+                    }])
+                    .select()
+                    .single();
+                
+                if (error) {
+                    if (error.message.includes('row-level security')) {
+                        mostrarResultado(`
+                            ❌ <strong>PROBLEMA RLS DETECTADO!</strong><br><br>
+                            Erro: ${error.message}<br><br>
+                            <strong>Solução:</strong><br>
+                            1. Abra o arquivo <code>solucao-rls-definitiva.sql</code><br>
+                            2. Copie TODO o conteúdo<br>
+                            3. Execute no SQL Editor do Supabase<br>
+                            4. Clique novamente neste botão para testar
+                        `, 'error');
+                    } else {
+                        mostrarResultado(`❌ Erro: ${error.message}`, 'error');
+                    }
+                } else {
+                    mostrarResultado(`✅ INSERT funcionou! ID criado: ${data.id.substring(0, 8)}...<br><br>Limpe este registro manualmente no Supabase se quiser.`, 'success');
+                    
+                    // Tentar limpar
+                    try {
+                        await client.from('empresas').delete().eq('id', data.id);
+                        mostrarResultado(`✅ INSERT funcionou e registro de teste foi removido automaticamente!`, 'success');
+                    } catch (e) {
+                        // Ignorar erro de limpeza
+                    }
+                }
+            } catch (e) {
+                mostrarResultado(`❌ Erro: ${e.message}`, 'error');
+            }
+        });
+
+        // Teste 3: Verificar políticas (via API do Supabase)
+        document.getElementById('btnVerificarPolticas').addEventListener('click', async () => {
+            mostrarResultado('Verificando políticas RLS...', 'info');
+            
+            try {
+                const { createClient } = supabase;
+                const client = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+                
+                // Tentar fazer um SELECT para verificar permissões
+                const { data, error } = await client
+                    .from('empresas')
+                    .select('count', { count: 'exact', head: true });
+                
+                if (error) {
+                    mostrarResultado(`❌ Erro ao verificar: ${error.message}<br><br>Isso pode indicar problema com RLS também.`, 'error');
+                } else {
+                    mostrarResultado(`
+                        ✅ Políticas RLS parecem estar funcionando para SELECT.<br><br>
+                        <strong>Nota:</strong> Para verificar políticas INSERT, use o botão "Testar INSERT" acima.<br><br>
+                        Para ver políticas no banco, execute no SQL Editor:<br>
+                        <code>SELECT * FROM pg_policies WHERE tablename IN ('empresas', 'questionarios');</code>
+                    `, 'info');
+                }
+            } catch (e) {
+                mostrarResultado(`❌ Erro: ${e.message}`, 'error');
+            }
+        });
+    </script>
+</body>
+</html>
+

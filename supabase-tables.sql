@@ -117,12 +117,12 @@ COMMENT ON VIEW vw_dados_dashboard IS 'View para exportação dos dados no forma
 ALTER TABLE empresas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE questionarios ENABLE ROW LEVEL SECURITY;
 
--- Permitir apenas INSERT para o papel público (inclui anon/authenticated)
+-- Permitir apenas INSERT para usuários anônimos e autenticados
 CREATE POLICY public_insert_empresas ON empresas
-    FOR INSERT TO public
+    FOR INSERT TO anon, authenticated
     WITH CHECK (true);
 
 CREATE POLICY public_insert_questionarios ON questionarios
-    FOR INSERT TO public
+    FOR INSERT TO anon, authenticated
     WITH CHECK (true);
 

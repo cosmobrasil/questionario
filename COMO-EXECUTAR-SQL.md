@@ -3,7 +3,7 @@
 ## Passo a Passo
 
 ### 1. Acessar o Supabase Dashboard
-- URL: https://supabase.com/dashboard/project/glkaisjobfpzopftjkfe
+- URL: https://supabase.com/dashboard/project/uapwjnnzexamassmwxjc
 - Faça login na sua conta
 
 ### 2. Abrir o SQL Editor

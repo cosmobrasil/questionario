@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnóstico - Config.js</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-6">
+        <h1 class="text-2xl font-bold text-gray-900 mb-6">🔍 Diagnóstico de Configuração</h1>
+        
+        <div id="resultado" class="space-y-4"></div>
+        
+        <div class="mt-6">
+            <button onclick="location.reload()" class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">
+                🔄 Recarregar e Verificar Novamente
+            </button>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        const resultado = document.getElementById('resultado');
+        
+        function adicionarItem(titulo, valor, tipo = 'info') {
+            const cores = {
+                success: 'bg-green-50 border-green-200 text-green-800',
+                error: 'bg-red-50 border-red-200 text-red-800',
+                warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+                info: 'bg-blue-50 border-blue-200 text-blue-800'
+            };
+            
+            const div = document.createElement('div');
+            div.className = `border rounded-lg p-4 ${cores[tipo]}`;
+            div.innerHTML = `<strong>${titulo}:</strong> ${valor}`;
+            resultado.appendChild(div);
+        }
+
+        // Verificar se window.QUESTIONARIO_CONFIG existe
+        if (typeof window.QUESTIONARIO_CONFIG === 'undefined') {
+            adicionarItem('❌ Erro Crítico', 'window.QUESTIONARIO_CONFIG não está definido. O arquivo config.js pode não estar carregando.', 'error');
+            adicionarItem('Solução', 'Verifique se o arquivo config.js existe e está no mesmo diretório.', 'warning');
+        } else {
+            adicionarItem('✅ Config.js', 'Arquivo carregado com sucesso', 'success');
+            
+            const CONFIG = window.QUESTIONARIO_CONFIG;
+            
+            // Verificar URL
+            if (CONFIG.SUPABASE_URL) {
+                adicionarItem('✅ SUPABASE_URL', CONFIG.SUPABASE_URL, 'success');
+            } else {
+                adicionarItem('❌ SUPABASE_URL', 'NÃO CONFIGURADO', 'error');
+            }
+            
+            // Verificar chave anônima
+            if (CONFIG.SUPABASE_ANON_KEY) {
+                if (CONFIG.SUPABASE_ANON_KEY.trim() === '') {
+                    adicionarItem('❌ SUPABASE_ANON_KEY', 'STRING VAZIA - Preencha no config.js', 'error');
+                } else {
+                    adicionarItem('✅ SUPABASE_ANON_KEY', `${CONFIG.SUPABASE_ANON_KEY.substring(0, 30)}... (${CONFIG.SUPABASE_ANON_KEY.length} caracteres)`, 'success');
+                }
+            } else {
+                adicionarItem('❌ SUPABASE_ANON_KEY', 'NÃO CONFIGURADO', 'error');
+            }
+            
+            // Verificar questões
+            if (CONFIG.QUESTÕES && Array.isArray(CONFIG.QUESTÕES)) {
+                adicionarItem('✅ QUESTÕES', `${CONFIG.QUESTÕES.length} questões configuradas`, 'success');
+            } else {
+                adicionarItem('⚠️ QUESTÕES', 'Não encontradas ou formato inválido', 'warning');
+            }
+            
+            // Verificar metodologia
+            if (CONFIG.METODOLOGIA) {
+                adicionarItem('✅ METODOLOGIA', 'Configurada', 'success');
+            } else {
+                adicionarItem('⚠️ METODOLOGIA', 'Não encontrada', 'warning');
+            }
+            
+            // Teste de criação do cliente Supabase (se biblioteca estiver carregada)
+            if (typeof supabase !== 'undefined') {
+                try {
+                    const { createClient } = supabase;
+                    const testClient = createClient(
+                        CONFIG.SUPABASE_URL || 'https://test.supabase.co',
+                        CONFIG.SUPABASE_ANON_KEY || ''
+                    );
+                    adicionarItem('✅ Biblioteca Supabase', 'Carregada e funcionando', 'success');
+                } catch (e) {
+                    adicionarItem('❌ Biblioteca Supabase', `Erro: ${e.message}`, 'error');
+                }
+            } else {
+                adicionarItem('⚠️ Biblioteca Supabase', 'Não carregada nesta página', 'warning');
+            }
+        }
+        
+        // Mostrar conteúdo completo do CONFIG (para debug)
+        const debugDiv = document.createElement('div');
+        debugDiv.className = 'mt-6 border rounded-lg p-4 bg-gray-50';
+        debugDiv.innerHTML = `
+            <h3 class="font-semibold mb-2">Debug - CONFIG Completo:</h3>
+            <pre class="text-xs overflow-auto max-h-64">${JSON.stringify(window.QUESTIONARIO_CONFIG || 'NÃO DEFINIDO', null, 2)}</pre>
+        `;
+        resultado.appendChild(debugDiv);
+    </script>
+</body>
+</html>
+

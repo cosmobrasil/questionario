@@ -1,0 +1,11 @@
+# Arquivos e pastas locais/temporários
+.DS_Store
+*.log
+node_modules/
+
+# Metadados locais do Supabase CLI
+supabase/.temp/
+
+# Build/artefatos eventuais
+dist/
+build/

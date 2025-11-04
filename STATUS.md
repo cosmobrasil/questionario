@@ -12,7 +12,7 @@
 - ✅ `COMO-EXECUTAR-SQL.md` - Instruções (já executado)
 
 ### ✅ Configuração Supabase
-- ✅ URL: `https://glkaisjobfpzopftjkfe.supabase.co`
+- ✅ URL: `https://uapwjnnzexamassmwxjc.supabase.co`
 - ✅ Anon Key: Configurada
 - ✅ Tabelas criadas:
   - `empresas` ✅
@@ -46,7 +46,7 @@ python3 -m http.server 8000
    - Finalize e verifique no Supabase
 
 3. **Verificar no Supabase:**
-   - Acesse: https://supabase.com/dashboard/project/glkaisjobfpzopftjkfe
+   - Acesse: https://supabase.com/dashboard/project/uapwjnnzexamassmwxjc
    - Vá em **Table Editor** → `empresas` → deve ter novos registros
    - Vá em **Table Editor** → `questionarios` → deve ter novas respostas
 

@@ -181,27 +181,39 @@
         try {
             console.log('Salvando dados no Supabase...');
             
+            // Validar configuração antes de continuar
+            const supabaseUrl = CONFIG.SUPABASE_URL;
+            const supabaseKey = CONFIG.SUPABASE_ANON_KEY || localStorage.getItem('supabase_anon_key') || '';
+            
+            if (!supabaseUrl || !supabaseKey) {
+                throw new Error(`Configuração do Supabase incompleta. URL: ${supabaseUrl ? 'OK' : 'FALTANDO'}, Key: ${supabaseKey ? 'OK' : 'FALTANDO'}. Verifique o arquivo config.js.`);
+            }
+            
             // Inicializar cliente Supabase
             const { createClient } = supabase;
-            const client = createClient(
-                CONFIG.SUPABASE_URL,
-                CONFIG.SUPABASE_ANON_KEY || localStorage.getItem('supabase_anon_key') || ''
-            );
-            
+            const client = createClient(supabaseUrl, supabaseKey);
+
             // 1. Salvar dados da empresa
-            const { data: empresaData, error: empresaError } = await client
+            // Gerar UUID no cliente para não depender de SELECT após INSERT
+            const empresaId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+                ? crypto.randomUUID()
+                : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+                    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+
+            const { error: empresaError } = await client
                 .from('empresas')
-                .insert([{
+                .insert([{ 
+                    id: empresaId,
                     nome_empresa: dados.empresa.nomeEmpresa,
                     cnpj: dados.empresa.cnpj,
                     nome_responsavel: dados.empresa.nomeResponsavel,
                     email: dados.empresa.email,
                     setor_economico: dados.empresa.setorEconomico,
                     produto_avaliado: dados.empresa.produtoAvaliado
-                }])
-                .select()
-                .single();
-            
+                }]);
+
             if (empresaError) throw empresaError;
             
             // 2. Preparar dados do questionário usando o mapeamento
@@ -213,7 +225,7 @@
             const { pontos, totalPossivel, percentual, maturidade } = calcularPontuacao();
 
             const questionarioData = {
-                empresa_id: empresaData.id,
+                empresa_id: empresaId,
                 ...respostasMapeadas,
                 soma: pontos,
                 indice_global_circularidade: percentual,
@@ -228,7 +240,7 @@
             if (questionarioError) throw questionarioError;
             
             console.log('Dados salvos com sucesso!');
-            // Disparo de e‑mail imediato (background, sem bloquear a UI)
+            // Disparo de e‑mail após salvamento (background, sem bloquear a UI)
             try {
                 const { pontos: p, totalPossivel: t, percentual: perc, grupos: grps, maturidade: mat } = calcularPontuacao();
                 const empresa = dados.empresa || {};
@@ -599,6 +611,11 @@
 
     async function enviarRelatorioPorEmail({ html, empresa, assunto }) {
         try {
+            if (!CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY) {
+                console.warn('⚠️ Configuração do Supabase incompleta para envio de e-mail');
+                return false;
+            }
+            
             const url = `${CONFIG.SUPABASE_URL}/functions/v1/send-report`;
             const resp = await fetch(url, {
                 method: 'POST',
@@ -610,7 +627,7 @@
                     html,
                     subject: assunto || `Relatório de Circularidade`,
                     to: 'ti@cosmobrasil.com.br',
-                    from: 'CosmoBrasil <noreply@cosmobrasil.com.br>',
+                    from: 'CosmoBrasil <noreply@on.resend.dev>',
                     metadata: {
                         empresa: empresa?.nomeEmpresa || '',
                         cnpj: empresa?.cnpj || '',
@@ -668,6 +685,16 @@
     // Inicialização
     console.log('Aplicativo do Questionário carregado');
     console.log('Total de questões:', QUESTÕES.length);
+    console.log('Configuração Supabase:', {
+        url: CONFIG.SUPABASE_URL || 'NÃO CONFIGURADO',
+        key: CONFIG.SUPABASE_ANON_KEY ? `${CONFIG.SUPABASE_ANON_KEY.substring(0, 20)}...` : 'NÃO CONFIGURADO'
+    });
+    
+    if (!CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY) {
+        console.error('⚠️ ATENÇÃO: Configuração do Supabase incompleta!');
+        console.error('URL:', CONFIG.SUPABASE_URL || 'FALTANDO');
+        console.error('Key:', CONFIG.SUPABASE_ANON_KEY ? 'Configurada' : 'FALTANDO');
+    }
     
 })();
 
