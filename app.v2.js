@@ -240,22 +240,39 @@
             if (questionarioError) throw questionarioError;
             
             console.log('Dados salvos com sucesso!');
-            // Disparo de e‑mail após salvamento (background, sem bloquear a UI)
-            try {
-                const { pontos: p, totalPossivel: t, percentual: perc, grupos: grps, maturidade: mat } = calcularPontuacao();
-                const empresa = dados.empresa || {};
-                const data = new Date();
-                const dataStr = data.toLocaleString('pt-BR');
-                const idRelatorio = Math.floor(Math.random() * 1000) + 1;
-                const estagio = classificarEstagio(perc);
-                const recs = gerarRecomendacoes(dados.respostas);
-                const potencial = 100 - perc;
-                const htmlEmail = construirHtmlEmailRelatorio({ empresa, percentual: perc, maturidade: mat, estagio, grupos: grps, recs, dataStr, idRelatorio, pontos: p, totalPossivel: t, potencial });
-                enviarRelatorioPorEmail({ html: htmlEmail, empresa, assunto: `Relatório de Circularidade · ${empresa.nomeEmpresa || 'Empresa'} · #${idRelatorio}` })
-                    .catch(err => console.error('Erro no envio de e‑mail:', err));
-            } catch (e) {
-                console.error('Falha ao preparar e‑mail de relatório:', e);
+
+            const { pontos: p, totalPossivel: t, percentual: perc, grupos: grps, maturidade: mat } = calcularPontuacao();
+            const empresa = dados.empresa || {};
+            const data = new Date();
+            const dataStr = data.toLocaleString('pt-BR');
+            const idRelatorio = Math.floor(Math.random() * 1000) + 1;
+            const estagio = classificarEstagio(perc);
+            const recs = gerarRecomendacoes(dados.respostas);
+            const potencial = 100 - perc;
+            const htmlEmail = construirHtmlEmailRelatorio({
+                empresa,
+                percentual: perc,
+                maturidade: mat,
+                estagio,
+                grupos: grps,
+                recs,
+                dataStr,
+                idRelatorio,
+                pontos: p,
+                totalPossivel: t,
+                potencial
+            });
+
+            const emailEnviado = await enviarRelatorioPorEmail({
+                html: htmlEmail,
+                empresa,
+                assunto: `Relatório de Circularidade · ${empresa.nomeEmpresa || 'Empresa'} · #${idRelatorio}`
+            });
+
+            if (!emailEnviado) {
+                throw new Error('Não foi possível confirmar o envio do relatório por e-mail.');
             }
+
             mostrarConfirmacao();
             
         } catch (error) {
@@ -621,13 +638,14 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${CONFIG.SUPABASE_ANON_KEY}`
+                    'Authorization': `Bearer ${CONFIG.SUPABASE_ANON_KEY}`,
+                    'apikey': CONFIG.SUPABASE_ANON_KEY
                 },
                 body: JSON.stringify({
                     html,
                     subject: assunto || `Relatório de Circularidade`,
                     to: 'ti@cosmobrasil.com.br',
-                    from: 'CosmoBrasil <noreply@on.resend.dev>',
+                    from: 'cosmobrasil <relatorio@cosmobrasil.com.br>',
                     metadata: {
                         empresa: empresa?.nomeEmpresa || '',
                         cnpj: empresa?.cnpj || '',
@@ -639,8 +657,15 @@
                 const txt = await resp.text();
                 throw new Error(`Falha no Edge Function: ${resp.status} ${txt}`);
             }
+            const contentType = resp.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                return true;
+            }
             const json = await resp.json();
-            return !!json && !json.error;
+            if (json && json.error) {
+                throw new Error(`Edge Function retornou erro: ${JSON.stringify(json.error)}`);
+            }
+            return true;
         } catch (e) {
             console.error('Erro ao chamar função de e-mail:', e);
             throw e;
@@ -697,4 +722,3 @@
     }
     
 })();
-

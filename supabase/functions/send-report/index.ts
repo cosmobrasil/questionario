@@ -40,19 +40,22 @@ Deno.serve(async (req: Request) => {
       html,
       subject = "Relatório de Circularidade",
       to = "ti@cosmobrasil.com.br",
-      from = "CosmoBrasil <noreply@cosmobrasil.com.br>",
+      from,
       replyTo,
       metadata = {},
     } = body || {};
 
-    // Garantir domínio de envio válido (fallback para domínio padrão do Resend)
-    // Usa indexOf para compatibilidade com alvos ES5 (evita String.includes)
-    const isResendDomain = (typeof from === "string") && from.indexOf("@on.resend.dev") !== -1;
-    const fromSanitized = isResendDomain ? from : "CosmoBrasil <noreply@on.resend.dev>";
+    const fallbackFrom = "cosmobrasil <relatorio@cosmobrasil.com.br>";
+    let resolvedFrom = fallbackFrom;
+    if (typeof from === "string" && from.trim().length > 0) {
+      const sanitized = from.trim();
+      const lower = sanitized.toLowerCase();
+      resolvedFrom = lower.indexOf("@cosmobrasil.com.br") !== -1 ? sanitized : fallbackFrom;
+    }
 
     const recipients = Array.isArray(to) ? to : [to];
     const payload = {
-      from: fromSanitized,
+      from: resolvedFrom,
       to: recipients,
       subject,
       html: html || "<p>Sem conteúdo.</p>",
@@ -71,11 +74,22 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify(payload),
     });
 
-    const result = await res.json();
-    if (!res.ok || result?.error) {
-      const msg = result?.error?.message || `HTTP ${res.status}`;
+    const raw = await res.text();
+    let result: any = null;
+    try {
+      result = raw ? JSON.parse(raw) : null;
+    } catch {
+      result = raw;
+    }
+    if (!res.ok || (result && typeof result === "object" && result?.error)) {
+      const errMsg =
+        (typeof result === "object" && result?.error?.message) ||
+        (typeof result === "object" && result?.message) ||
+        (typeof raw === "string" && raw.trim()) ||
+        `HTTP ${res.status}`;
+      console.error("Resend API error:", errMsg, { status: res.status, result });
       return new Response(
-        JSON.stringify({ error: msg }),
+        JSON.stringify({ error: errMsg, status: res.status, result }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
