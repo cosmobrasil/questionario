@@ -68,3 +68,4 @@ questionarios  | public_insert_questionarios | {anon,authenticated} | INSERT
 
 O arquivo `fix-rls-policies.sql` contém o script completo para correção.
 
+

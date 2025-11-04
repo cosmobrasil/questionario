@@ -87,3 +87,4 @@ SELECT * FROM pg_policies WHERE tablename = 'questionarios';
 
 Se não aparecer nenhuma política, elas não foram criadas. Execute o script novamente.
 
+

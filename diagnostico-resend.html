@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Diagnóstico Resend</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#f8fafc;padding:2rem}
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px;max-width:800px;margin:0 auto}
+    .row{display:flex;gap:12px;margin:12px 0}
+    .ok{color:#065f46;background:#ecfdf5;border:1px solid #d1fae5;border-radius:8px;padding:8px}
+    .bad{color:#7f1d1d;background:#fef2f2;border:1px solid #fee2e2;border-radius:8px;padding:8px}
+    button{padding:10px 16px;border-radius:8px;background:#2563eb;color:#fff;border:none;cursor:pointer}
+    button:hover{background:#1d4ed8}
+    code{background:#f3f4f6;padding:2px 6px;border-radius:6px}
+    .small{font-size:12px;color:#6b7280}
+    pre{background:#0b1022;color:#d1d5db;padding:12px;border-radius:8px;overflow:auto}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1 style="margin:0 0 8px 0">Diagnóstico de Envio (Resend via Edge Function)</h1>
+    <p class="small">Usa `${SUPABASE_URL}/functions/v1/send-report` com `Authorization: Bearer ${SUPABASE_ANON_KEY}`.</p>
+
+    <div id="configStatus" class="row"></div>
+
+    <div class="row">
+      <label for="assunto"><strong>Assunto do teste</strong></label>
+      <input id="assunto" type="text" value="Relatório de Circularidade (Diagnóstico)" style="flex:1;padding:8px;border:1px solid #d1d5db;border-radius:8px">
+    </div>
+
+    <div class="row">
+      <button id="btnEnviar">Enviar e testar</button>
+      <button id="btnPing">Ping simples (POST vazio)</button>
+      <button id="btnTestGet">Testar GET (espera 405)</button>
+    </div>
+
+    <div id="resultado" style="margin-top:12px"></div>
+    <pre id="log"></pre>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    (function(){
+      const cfg = window.QUESTIONARIO_CONFIG || {};
+      function getFunctionsUrl(cfg){
+        const supaUrl = cfg.SUPABASE_URL || '';
+        // Tenta extrair o project-ref do subdomínio e usar o domínio correto de Functions
+        const m = supaUrl.match(/^https?:\/\/([a-z0-9-]+)\.supabase\.co/i);
+        if (m && m[1]) {
+          const ref = m[1];
+          return `https://${ref}.functions.supabase.co/send-report`;
+        }
+        // Fallback para caminho antigo se não conseguir extrair
+        return supaUrl.replace(/\/$/, '') + '/functions/v1/send-report';
+      }
+      const primaryUrl = getFunctionsUrl(cfg);
+      const fallbackUrl = (cfg.SUPABASE_URL || '').replace(/\/$/, '') + '/functions/v1/send-report';
+      const key = cfg.SUPABASE_ANON_KEY || '';
+      const configStatus = document.getElementById('configStatus');
+      const resultado = document.getElementById('resultado');
+      const log = document.getElementById('log');
+      const btnEnviar = document.getElementById('btnEnviar');
+      const btnPing = document.getElementById('btnPing');
+      const btnTestGet = document.getElementById('btnTestGet');
+
+      function setStatus(ok, msg){
+        configStatus.innerHTML = `<div class="${ok ? 'ok' : 'bad'}">${msg}</div>`;
+      }
+
+      function isAbsoluteHttps(u){
+        return typeof u === 'string' && /^https:\/\//i.test(u);
+      }
+
+      if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) {
+        setStatus(false, 'Configuração incompleta: verifique SUPABASE_URL e SUPABASE_ANON_KEY em config.js');
+      } else {
+        setStatus(true, `Configuração OK · Base: <code>${cfg.SUPABASE_URL}</code> · Primário: <code>${primaryUrl}</code> · Alternativo: <code>${fallbackUrl}</code>`);
+      }
+
+      async function doPost(url, payload){
+        return fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${key}`
+          },
+          body: JSON.stringify(payload)
+        });
+      }
+
+      async function callFunction(payload){
+        resultado.textContent = 'Enviando...';
+        log.textContent = '';
+        if (!isAbsoluteHttps(primaryUrl) || !isAbsoluteHttps(fallbackUrl)){
+          resultado.textContent = 'URL inválida: esperado https://...';
+          log.textContent = `Primário: ${primaryUrl}\nAlternativo: ${fallbackUrl}`;
+          return;
+        }
+        try {
+          let usingUrl = primaryUrl;
+          let resp;
+          try {
+            resp = await doPost(primaryUrl, payload);
+          } catch (e1) {
+            // Tenta endpoint alternativo caso LOAD/NET falhe
+            usingUrl = fallbackUrl;
+            resp = await doPost(fallbackUrl, payload);
+          }
+          const text = await resp.text();
+          let json;
+          try { json = JSON.parse(text); } catch(e) {}
+          resultado.textContent = resp.ok && (!json || !json.error)
+            ? `OK via ${usingUrl}: e-mail enviado (ou aceito pelo Resend).`
+            : `Falhou em ${usingUrl}: ${resp.status} ${json?.error || text}`;
+          log.textContent = text || '(sem corpo)';
+        } catch (err) {
+          resultado.textContent = 'Erro de rede/execução ao chamar a função';
+          log.textContent = String(err);
+        }
+      }
+
+      btnTestGet.addEventListener('click', async () => {
+        resultado.textContent = 'Testando GET no primário...';
+        log.textContent = '';
+        if (!isAbsoluteHttps(primaryUrl)){
+          resultado.textContent = 'URL primária inválida: esperado https://...';
+          log.textContent = `Primário: ${primaryUrl}`;
+          return;
+        }
+        try {
+          const resp = await fetch(primaryUrl, { method: 'GET' });
+          const text = await resp.text();
+          resultado.textContent = `GET ${primaryUrl} → status ${resp.status} (esperado 405)`;
+          log.textContent = text || '(sem corpo)';
+        } catch (err){
+          resultado.textContent = 'Falha de rede ao fazer GET no domínio de Functions';
+          log.textContent = String(err);
+        }
+      });
+
+      btnEnviar.addEventListener('click', () => {
+        const assunto = document.getElementById('assunto').value || 'Diagnóstico Resend';
+        const html = '<h1>Teste de Diagnóstico</h1><p>Se você está lendo, o Resend e a Edge Function estão OK.</p>';
+        callFunction({ to: 'ti@cosmobrasil.com.br', subject: assunto, html });
+      });
+
+      btnPing.addEventListener('click', () => {
+        callFunction({});
+      });
+    })();
+  </script>
+</body>
+</html>
