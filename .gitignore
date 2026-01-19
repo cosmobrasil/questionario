@@ -2,6 +2,7 @@
 .DS_Store
 *.log
 node_modules/
+client_secret_*.json
 
 # Metadados locais do Supabase CLI
 supabase/.temp/
