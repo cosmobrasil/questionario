@@ -143,7 +143,7 @@
       btnEnviar.addEventListener('click', () => {
         const assunto = document.getElementById('assunto').value || 'Diagnóstico Resend';
         const html = '<h1>Teste de Diagnóstico</h1><p>Se você está lendo, o Resend e a Edge Function estão OK.</p>';
-        callFunction({ to: 'ti@cosmobrasil.com.br', subject: assunto, html });
+        callFunction({ to: 'ti@cosmobrasil.app', subject: assunto, html });
       });
 
       btnPing.addEventListener('click', () => {

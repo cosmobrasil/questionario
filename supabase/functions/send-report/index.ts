@@ -39,18 +39,18 @@ Deno.serve(async (req: Request) => {
     const {
       html,
       subject = "Relatório de Circularidade",
-      to = "ti@cosmobrasil.com.br",
+      to = "ti@cosmobrasil.app",
       from,
       replyTo,
       metadata = {},
     } = body || {};
 
-    const fallbackFrom = "cosmobrasil <relatorio@cosmobrasil.com.br>";
+    const fallbackFrom = "cosmobrasil <relatorio@cosmobrasil.app>";
     let resolvedFrom = fallbackFrom;
     if (typeof from === "string" && from.trim().length > 0) {
       const sanitized = from.trim();
       const lower = sanitized.toLowerCase();
-      resolvedFrom = lower.indexOf("@cosmobrasil.com.br") !== -1 ? sanitized : fallbackFrom;
+      resolvedFrom = lower.indexOf("@cosmobrasil.app") !== -1 ? sanitized : fallbackFrom;
     }
 
     const recipients = Array.isArray(to) ? to : [to];

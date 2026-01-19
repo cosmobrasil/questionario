@@ -609,8 +609,8 @@
                 body: JSON.stringify({
                     html,
                     subject: assunto || `Relatório de Circularidade`,
-                    to: 'ti@cosmobrasil.com.br',
-                    from: 'CosmoBrasil <noreply@cosmobrasil.com.br>',
+                    to: 'ti@cosmobrasil.app',
+                    from: 'CosmoBrasil <noreply@cosmobrasil.app>',
                     metadata: {
                         empresa: empresa?.nomeEmpresa || '',
                         cnpj: empresa?.cnpj || '',

@@ -123,7 +123,7 @@ CREATE POLICY public_insert_empresas ON empresas
 
 ## ✉️ Envio de Relatórios por E-mail
 
-- O app envia automaticamente o relatório gerado para `ti@cosmobrasil.com.br` ao finalizar o questionário (envio silencioso, sem alterações visuais e sem bloquear o fluxo).
+- O app envia automaticamente o relatório gerado para `ti@cosmobrasil.app` ao finalizar o questionário (envio silencioso, sem alterações visuais e sem bloquear o fluxo).
 - A implementação usa uma Edge Function no Supabase integrada ao serviço Resend, com CORS habilitado para chamadas do navegador.
 
 ### Como configurar
@@ -140,7 +140,7 @@ CREATE POLICY public_insert_empresas ON empresas
    - Body (exemplo):
      ```json
      {
-       "to": "ti@cosmobrasil.com.br",
+       "to": "ti@cosmobrasil.app",
        "subject": "Relatório de Circularidade",
        "html": "<h1>Relatório</h1><p>Conteúdo de teste</p>"
      }
