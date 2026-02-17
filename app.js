@@ -1,7 +1,7 @@
 // Aplicativo do Questionário de Circularidade
 (() => {
     'use strict';
-    
+
     const CONFIG = window.QUESTIONARIO_CONFIG || {};
     // Fallbacks defensivos caso config.js não carregue em produção
     const MAP_DEFAULT = {
@@ -42,7 +42,7 @@
         }
     };
     const QUESTÕES = Array.isArray(CONFIG.QUESTÕES) ? CONFIG.QUESTÕES : [];
-    
+
     const elementos = {
         termosScreen: document.getElementById('termosScreen'),
         identificacaoScreen: document.getElementById('identificacaoScreen'),
@@ -54,31 +54,31 @@
         btnVoltarTermos: document.getElementById('btnVoltarTermos'),
         formIdentificacao: document.getElementById('formIdentificacao')
     };
-    
+
     const dados = {
         empresa: {},
         respostas: {},
         questaoAtual: 0
     };
-    
+
     // Event Listeners
-    elementos.aceitarTermos.addEventListener('change', function() {
+    elementos.aceitarTermos.addEventListener('change', function () {
         elementos.btnContinuar.disabled = !this.checked;
     });
-    
+
     elementos.btnContinuar.addEventListener('click', () => {
         elementos.termosScreen.classList.add('hidden');
         elementos.identificacaoScreen.classList.remove('hidden');
     });
-    
+
     elementos.btnVoltarTermos.addEventListener('click', () => {
         elementos.identificacaoScreen.classList.add('hidden');
         elementos.termosScreen.classList.remove('hidden');
     });
-    
-    elementos.formIdentificacao.addEventListener('submit', function(e) {
+
+    elementos.formIdentificacao.addEventListener('submit', function (e) {
         e.preventDefault();
-        
+
         dados.empresa = {
             nomeEmpresa: document.getElementById('nomeEmpresa').value,
             cnpj: document.getElementById('cnpj').value,
@@ -87,18 +87,18 @@
             setorEconomico: document.getElementById('setorEconomico').value,
             produtoAvaliado: document.getElementById('produtoAvaliado').value
         };
-        
+
         iniciarQuestionario();
     });
-    
+
     function iniciarQuestionario() {
         elementos.identificacaoScreen.classList.add('hidden');
         elementos.questionarioScreen.classList.remove('hidden');
-        
+
         dados.questaoAtual = 0;
         renderizarQuestao();
     }
-    
+
     function renderizarQuestao() {
         const questao = QUESTÕES[dados.questaoAtual];
         const html = `
@@ -139,18 +139,18 @@
                 </div>
             </div>
         `;
-        
+
         elementos.questionarioScreen.innerHTML = html;
-        
+
         // Event listeners para o formulário
         const formQuestao = document.getElementById('formQuestao');
-        formQuestao.addEventListener('submit', function(e) {
+        formQuestao.addEventListener('submit', function (e) {
             e.preventDefault();
             const resposta = formQuestao.querySelector('input[name="resposta"]:checked').value;
             dados.respostas[questao.id] = parseInt(resposta);
             proximaQuestao();
         });
-        
+
         const btnAnterior = document.getElementById('btnAnterior');
         if (dados.questaoAtual > 0) {
             btnAnterior.addEventListener('click', questaoAnterior);
@@ -158,7 +158,7 @@
             btnAnterior.style.display = 'none';
         }
     }
-    
+
     function proximaQuestao() {
         if (dados.questaoAtual < QUESTÕES.length - 1) {
             dados.questaoAtual++;
@@ -167,27 +167,27 @@
             finalizarQuestionario();
         }
     }
-    
+
     function questaoAnterior() {
         if (dados.questaoAtual > 0) {
             dados.questaoAtual--;
             renderizarQuestao();
         }
     }
-    
+
     async function finalizarQuestionario() {
         // Mostrar loading enquanto salva
         mostrarLoading();
         try {
             console.log('Salvando dados no Supabase...');
-            
+
             // Inicializar cliente Supabase
             const { createClient } = supabase;
             const client = createClient(
                 CONFIG.SUPABASE_URL,
                 CONFIG.SUPABASE_ANON_KEY || localStorage.getItem('supabase_anon_key') || ''
             );
-            
+
             // 1. Salvar dados da empresa
             const { data: empresaData, error: empresaError } = await client
                 .from('empresas')
@@ -201,9 +201,9 @@
                 }])
                 .select()
                 .single();
-            
+
             if (empresaError) throw empresaError;
-            
+
             // 2. Preparar dados do questionário usando o mapeamento
             const respostasMapeadas = Object.entries(CONFIG.MAPEAMENTO_RESPOSTAS || MAP_DEFAULT).reduce((acc, [id, coluna]) => {
                 acc[coluna] = dados.respostas[parseInt(id, 10)] || null;
@@ -219,14 +219,14 @@
                 indice_global_circularidade: percentual,
                 indice_maturidade_estruturante: maturidade
             };
-            
+
             // 3. Salvar dados do questionário (inclui campos calculados)
             const { error: questionarioError } = await client
                 .from('questionarios')
                 .insert([questionarioData]);
-            
+
             if (questionarioError) throw questionarioError;
-            
+
             console.log('Dados salvos com sucesso!');
             // Disparo de e‑mail imediato (background, sem bloquear a UI)
             try {
@@ -245,7 +245,7 @@
                 console.error('Falha ao preparar e‑mail de relatório:', e);
             }
             mostrarConfirmacao();
-            
+
         } catch (error) {
             console.error('Erro ao salvar dados:', error);
             mostrarErro(error.message);
@@ -265,7 +265,7 @@
             </div>
         `;
     }
-    
+
     function mostrarErro(mensagem) {
         elementos.confirmacaoScreen.classList.remove('hidden');
         elementos.confirmacaoScreen.innerHTML = `
@@ -410,10 +410,22 @@
                     </div>
                     <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
                         <h3 class="font-semibold text-emerald-900 mb-2">Resultado do Diagnóstico</h3>
-                        <p class="text-sm text-emerald-800">Pontuação Total: <span class="font-bold">${pontos}</span> de ${totalPossivel} pontos</p>
-                        <p class="text-sm text-emerald-800">Índice de Circularidade: <span class="font-bold">${percentual}%</span></p>
-                        <p class="text-sm text-emerald-800">Índice de Maturidade Estruturante: <span class="font-bold">${maturidade}%</span></p>
-                        <p class="text-sm text-emerald-800">Estágio: <span class="font-bold">${estagio}</span></p>
+                        
+                        <!-- Donut Chart Section -->
+                        <div class="flex flex-col md:flex-row gap-6 mb-4">
+                            <div class="flex-1">
+                                <p class="text-sm text-emerald-800">Pontuação Total: <span class="font-bold">${pontos}</span> de ${totalPossivel} pontos</p>
+                                <p class="text-sm text-emerald-800">Índice de Circularidade: <span class="font-bold">${percentual}%</span></p>
+                                <p class="text-sm text-emerald-800">Índice de Maturidade Estruturante: <span class="font-bold">${maturidade}%</span></p>
+                                <p class="text-sm text-emerald-800">Estágio: <span class="font-bold">${estagio}</span></p>
+                            </div>
+                            <div class="flex-shrink-0 flex justify-center items-center">
+                                <div style="width: 200px; height: 200px; position: relative;">
+                                    <canvas id="circularidadeChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="mt-3">
                             <div class="w-full bg-emerald-100 rounded-full h-2">
                                 <div class="bg-emerald-600 h-2 rounded-full" style="width: ${percentual}%"></div>
@@ -502,6 +514,63 @@
         }
 
         // Envio por e‑mail movido para a finalização do questionário
+
+        // Criar gráfico de rosca (donut chart) para o índice de circularidade
+        const ctx = document.getElementById('circularidadeChart');
+        if (ctx && typeof Chart !== 'undefined') {
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Índice de Circularidade', 'Potencial de Melhoria'],
+                    datasets: [{
+                        data: [percentual, potencial],
+                        backgroundColor: [
+                            '#10b981', // Verde (emerald-500)
+                            '#e5e7eb'  // Cinza claro (gray-200)
+                        ],
+                        borderWidth: 0,
+                        cutout: '70%'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return context.label + ': ' + context.parsed + '%';
+                                }
+                            }
+                        }
+                    }
+                },
+                plugins: [{
+                    id: 'centerText',
+                    beforeDraw: function (chart) {
+                        const width = chart.width;
+                        const height = chart.height;
+                        const ctx = chart.ctx;
+                        ctx.restore();
+
+                        const fontSize = (height / 114).toFixed(2);
+                        ctx.font = 'bold ' + fontSize + 'em sans-serif';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillStyle = '#10b981';
+
+                        const text = percentual + '%';
+                        const textX = Math.round((width - ctx.measureText(text).width) / 2);
+                        const textY = height / 2;
+
+                        ctx.fillText(text, textX, textY);
+                        ctx.save();
+                    }
+                }]
+            });
+        }
     }
 
     function exportarRelatorioPDF() {
@@ -629,7 +698,7 @@
             throw e;
         }
     }
-    
+
     function gerarRelatorioTexto(dadosCompletos) {
         const { pontos, totalPossivel, percentual, grupos, maturidade } = calcularPontuacao();
         const empresa = dadosCompletos.empresa || {};
@@ -637,9 +706,9 @@
         const estagio = classificarEstagio(percentual);
         const potencial = 100 - percentual;
         const data = new Date();
-        const dataStr = data.toLocaleString('pt-BR', { 
-            day: '2-digit', 
-            month: '2-digit', 
+        const dataStr = data.toLocaleString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
             year: 'numeric',
             hour: '2-digit',
             minute: '2-digit'
@@ -674,10 +743,10 @@ Pontuação Total: ${pontos} de ${totalPossivel} pontos possíveis
 Classificação: Estágio ${estagio}
 
 ${percentual >= 75 ? 'Sua empresa demonstra excelente maturidade na integração de práticas sustentáveis e circulares, posicionando-se como referência no mercado internacional de economia circular.' :
- percentual >= 60 ? 'Sua empresa já alcançou um nível significativo de maturidade na integração de práticas sustentáveis e circulares com propensão crescente para aproveitar oportunidades em novos nichos de mercado.' :
- percentual >= 45 ? 'Sua empresa está em um estágio intermediário de maturidade circular, com potencial significativo para avançar em práticas sustentáveis e acessar novos mercados internacionais.' :
- percentual >= 30 ? 'Sua empresa está iniciando a jornada rumo à economia circular, com oportunidades claras de crescimento e diferenciação no mercado através de práticas sustentáveis.' :
- 'Sua empresa tem grande potencial para implementar práticas de economia circular que podem abrir novos nichos de mercado e aumentar a competitividade internacional.'}
+                percentual >= 60 ? 'Sua empresa já alcançou um nível significativo de maturidade na integração de práticas sustentáveis e circulares com propensão crescente para aproveitar oportunidades em novos nichos de mercado.' :
+                    percentual >= 45 ? 'Sua empresa está em um estágio intermediário de maturidade circular, com potencial significativo para avançar em práticas sustentáveis e acessar novos mercados internacionais.' :
+                        percentual >= 30 ? 'Sua empresa está iniciando a jornada rumo à economia circular, com oportunidades claras de crescimento e diferenciação no mercado através de práticas sustentáveis.' :
+                            'Sua empresa tem grande potencial para implementar práticas de economia circular que podem abrir novos nichos de mercado e aumentar a competitividade internacional.'}
 
 ${percentual}%
 Circularidade Alcançada
@@ -770,7 +839,7 @@ ID do Relatório: ${idRelatorio} | Gerado em: ${dataStr}`;
     function mostrarConfirmacao() {
         elementos.questionarioScreen.classList.add('hidden');
         elementos.confirmacaoScreen.classList.remove('hidden');
-        
+
         elementos.confirmacaoScreen.innerHTML = `
             <div class="bg-white rounded-xl shadow-2xl p-8 max-w-4xl mx-auto">
                 <div class="text-center">
@@ -847,10 +916,10 @@ ID do Relatório: ${idRelatorio} | Gerado em: ${dataStr}`;
             btnVerRelatorio.addEventListener('click', mostrarRelatorio);
         }
     }
-    
+
     // Inicialização
     console.log('Aplicativo do Questionário carregado');
     console.log('Total de questões:', QUESTÕES.length);
-    
+
 })();
 
