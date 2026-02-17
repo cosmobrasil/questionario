@@ -443,12 +443,39 @@
                         <p class="text-sm text-emerald-800">Índice de Circularidade: <span class="font-bold">${percentual}%</span></p>
                         <p class="text-sm text-emerald-800">Índice de Maturidade Estruturante: <span class="font-bold">${maturidade}%</span></p>
                         <p class="text-sm text-emerald-800">Estágio: <span class="font-bold">${estagio}</span></p>
-                        <div class="mt-3">
-                            <div class="w-full bg-emerald-100 rounded-full h-2">
-                                <div class="bg-emerald-600 h-2 rounded-full" style="width: ${percentual}%"></div>
+                        
+                        <div class="mt-6 flex flex-col items-center justify-center">
+                            <div class="relative w-40 h-40">
+                                <!-- Gráfico de Rosca (Donut Chart) em SVG para compatibilidade de impressão -->
+                                <svg viewBox="0 0 36 36" class="w-full h-full transform -rotate-90">
+                                    <!-- Círculo de fundo -->
+                                    <path class="text-gray-200" 
+                                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
+                                          fill="none" 
+                                          stroke="#e5e7eb" 
+                                          stroke-width="3.8" />
+                                    <!-- Círculo de progresso -->
+                                    <path class="text-emerald-600" 
+                                          stroke-dasharray="${percentual}, 100" 
+                                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
+                                          fill="none" 
+                                          stroke="#059669" 
+                                          stroke-width="3.8" 
+                                          stroke-linecap="round" />
+                                </svg>
+                                <!-- Centro da Rosca -->
+                                <div class="absolute top-0 left-0 w-full h-full flex items-center justify-center">
+                                     <span class="text-4xl font-bold text-black">${percentual}%</span>
+                                </div>
                             </div>
-                            <p class="text-xs text-emerald-700 mt-2 text-center">Circularidade alcançada: ${percentual}% · Potencial de melhoria: ${potencial}%</p>
+                            <p class="text-sm text-emerald-700 mt-4 font-medium text-center">
+                                Índice de Circularidade
+                            </p>
+                            <p class="text-xs text-gray-500 mt-1 text-center">
+                                Potencial de melhoria: ${potencial}%
+                            </p>
                         </div>
+
                         <div class="mt-4 grid md:grid-cols-5 gap-3">
                             ${Object.entries(grupos).map(([nome, perc]) => `
                                 <div class="text-center bg-white border border-emerald-200 rounded-lg p-2">
@@ -537,12 +564,46 @@
         const html = elementos.relatorioScreen.innerHTML;
         const win = window.open('', '_blank');
         if (!win) return;
-        win.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>Relatório de Circularidade</title><script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="style.css"><style>@page{size:A4;margin:20mm;} body{background:#fff;} .no-print{display:none !important;} @media print{button,a{display:none !important;}}</style></head><body class="p-8">${html}</body></html>`);
+        
+        // Injetar SVG e estilos para impressão correta
+        win.document.write(`
+            <!DOCTYPE html>
+            <html lang="pt-BR">
+            <head>
+                <meta charset="utf-8">
+                <title>Relatório de Circularidade</title>
+                <script src="https://cdn.tailwindcss.com"></script>
+                <style>
+                    @page { size: A4; margin: 15mm; }
+                    body { background: #fff; font-family: sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    .no-print { display: none !important; }
+                    @media print {
+                        button, a.no-print { display: none !important; }
+                        body { -webkit-print-color-adjust: exact; }
+                    }
+                    /* Fallback simples se o Tailwind falhar */
+                    .text-center { text-align: center; }
+                    .font-bold { font-weight: bold; }
+                    .flex { display: flex; }
+                    .justify-center { justify-content: center; }
+                    .items-center { align-items: center; }
+                </style>
+            </head>
+            <body class="p-8">
+                ${html}
+                <script>
+                    // Esperar o Tailwind processar e imagens carregarem
+                    window.onload = () => {
+                        setTimeout(() => {
+                            window.print();
+                            // Opcional: window.close(); // Alguns navegadores bloqueiam fechar scripts que não abriram
+                        }, 800);
+                    };
+                </script>
+            </body>
+            </html>
+        `);
         win.document.close();
-        win.onload = () => {
-            win.focus();
-            win.print();
-        };
     }
 
     function baixarRelatorioHTML() {
