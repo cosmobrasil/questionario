@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base de Armazenamento - Relatórios de Circularidade</title>
+    <link rel="icon" href="logo.png">
+
+    <!-- Scripts e Estilos Externos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Fontes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+
+        /* Estilizacao para impressão quando gerada pelo JS */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+
+    <!-- Tela de Login -->
+    <div id="loginScreen" class="fixed inset-0 z-50 bg-gray-50 flex items-center justify-center">
+        <div class="bg-white p-8 rounded-xl shadow-lg max-w-md w-full border border-gray-100">
+            <div class="text-center mb-6">
+                <img src="logo.png" alt="CosmoBrasil" class="h-12 w-auto mx-auto mb-4">
+                <h2 class="text-2xl font-bold text-gray-900">Acesso Restrito</h2>
+                <p class="text-sm text-gray-500 mt-1">Base de Relatórios de Circularidade</p>
+            </div>
+
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700">Usuário</label>
+                    <input type="text" id="username" required
+                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm">
+                </div>
+
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">Senha</label>
+                    <input type="password" id="password" required
+                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm">
+                </div>
+
+                <div id="loginError" class="text-red-600 text-sm hidden text-center">
+                    Usuário ou senha incorretos.
+                </div>
+
+                <button type="submit"
+                    class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors">
+                    Entrar
+                </button>
+            </form>
+
+            <p class="mt-4 text-center text-xs text-gray-400">
+                Acesso exclusivo para administradores CosmoBrasil.
+            </p>
+        </div>
+    </div>
+
+    <!-- Conteúdo Principal Protegido (Invisível até login) -->
+    <div id="mainContent" class="hidden">
+        <!-- Cabeçalho -->
+        <header class="bg-white shadow-sm sticky top-0 z-10">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <img src="logo.png" alt="Logo" class="h-10 w-auto">
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900">Base de Armazenamento - Relatórios de Circularidade
+                        </h1>
+                        <p class="text-xs text-gray-500">Histórico de diagnósticos realizados</p>
+                    </div>
+                </div>
+                <div>
+                    <button onclick="window.location.reload()"
+                        class="p-2 text-gray-400 hover:text-gray-600 transition-colors" title="Sair / Atualizar">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Conteúdo Principal -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- (Mantendo o conteúdo original da main aqui dentro...) -->
+
+            <!-- Estado de Carregamento / Erro -->
+            <div id="statusMessage" class="hidden mb-6 p-4 rounded-lg bg-blue-50 text-blue-700"></div>
+
+            <!-- Tabela de Relatórios e Filtros -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div
+                    class="p-4 border-b border-gray-100 bg-gray-50 flex flex-col sm:flex-row gap-4 justify-between items-center">
+                    <h2 class="font-semibold text-gray-700">Relatórios Disponíveis</h2>
+                    <div class="relative">
+                        <input type="text" id="searchInput" placeholder="Buscar por empresa..."
+                            class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none w-64">
+                        <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider">
+                                <th class="px-6 py-4 font-semibold border-b">Data</th>
+                                <th class="px-6 py-4 font-semibold border-b">Empresa</th>
+                                <th class="px-6 py-4 font-semibold border-b">CNPJ</th>
+                                <th class="px-6 py-4 font-semibold border-b text-center">Índice Global</th>
+                                <th class="px-6 py-4 font-semibold border-b text-center">Maturidade</th>
+                                <th class="px-6 py-4 font-semibold border-b text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportsTableBody" class="text-sm divide-y divide-gray-100">
+                            <!-- Linhas serão inseridas aqui via JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paginação simples (se necessário, implementado via JS basic) -->
+                <div class="p-4 border-t border-gray-100 text-xs text-gray-500 text-center" id="footerInfo">
+                    Carregando...
+                </div>
+            </div>
+        </main>
+    </div> <!-- Fim MainContent -->
+
+    <!-- Modal de Visualização do Relatório -->
+    <div id="reportModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog"
+        aria-modal="true">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity backdrop-blur-sm"
+            onclick="fecharModalRelatorio()"></div>
+
+        <div class="flex items-center justify-center min-h-screen p-4 text-center sm:p-0">
+            <div
+                class="relative bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-5xl w-full">
+
+                <!-- Header do Modal -->
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 flex justify-between items-center border-b border-gray-200">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Visualização do Relatório
+                    </h3>
+                    <button onclick="fecharModalRelatorio()"
+                        class="text-gray-400 hover:text-gray-500 focus:outline-none">
+                        <span class="sr-only">Fechar</span>
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Conteúdo do Relatório (Injetado via JS) -->
+                <div id="reportContent" class="bg-white">
+                    <!-- O HTML do relatório gerado será inserido aqui -->
+                </div>
+
+                <!-- Footer do Modal com Ações -->
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-200 gap-2">
+                    <button type="button" id="btnDownloadPDF"
+                        class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-emerald-600 text-base font-medium text-white hover:bg-emerald-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                        Baixar PDF
+                    </button>
+                    <button type="button" id="btnDownloadHTML"
+                        class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                        Baixar HTML
+                    </button>
+                    <button type="button" onclick="fecharModalRelatorio()"
+                        class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:text-gray-500 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm">
+                        Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts de Lógica -->
+    <script src="config.js"></script>
+    <script type="module" src="relatorios.js"></script>
+
+    <!-- Script Global para Modal e Login -->
+    <script>
+        function fecharModalRelatorio() {
+            document.getElementById('reportModal').classList.add('hidden');
+        }
+
+        // Lógica de Login Simples
+        document.getElementById('loginForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            const err = document.getElementById('loginError');
+
+            // Credenciais fixas (Front-end based gatekeeping)
+            if (u === 'cosmobrasil' && p === 'cosmob2026@') {
+                // Sucesso
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainContent').classList.remove('hidden');
+
+                // Iniciar carregamento dos dados agora que está logado
+                if (window.inicializarRelatorios) {
+                    window.inicializarRelatorios();
+                } else {
+                    console.error('Função inicializarRelatorios não encontrada.');
+                    // Tenta um fallback caso o module ainda não tenha carregado
+                    setTimeout(() => {
+                        if (window.inicializarRelatorios) window.inicializarRelatorios();
+                    }, 500);
+                }
+            } else {
+                // Erro
+                err.classList.remove('hidden');
+                // Pequena animação de shake para feedback visual
+                const form = document.getElementById('loginForm');
+                form.classList.add('animate-pulse');
+                setTimeout(() => form.classList.remove('animate-pulse'), 500);
+            }
+        });
+    </script>
+</body>
+
+</html>
